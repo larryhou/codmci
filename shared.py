@@ -1,13 +1,13 @@
 from twisted.internet.protocol import Protocol
-import json, struct
+import json, struct, io
 
 TRANSPORT_MAGIC_NUMBER = 0x12345678
 
 class Commands(object):
     ACKNOWLEDGE = 0
-    SLAVE_INFO_REQ = 1
-    SLAVE_INFO_RSP = 2
-    SLAVE_INFO_NOTIFY = 1001
+    SYSTEM_INFO_REQ = 1
+    SYSTEM_INFO_RSP = 2
+    SYSTEM_INFO_NOTIFY = 1001
     HEART_BEAT_REQ = 3
     HEART_BEAT_RSP = 4
 
@@ -21,6 +21,35 @@ class TCP(Protocol):
         self.__size = 0
         self.__received = 0
         self.__stage = 0
+
+    @staticmethod
+    def decode_system_information(text):
+        string = io.StringIO(text)
+        cursor = result = {}
+        stack = []
+        indent = 0
+        entity = None
+        for line in string.readlines():
+            line = line[:-1].rstrip()
+            if not line: continue
+            padding = 0
+            for n in range(len(line)):
+                if line[n] != ' ':
+                    padding = n
+                    break
+            sep = line.find(':')
+            if indent != padding:
+                if indent < padding:
+                    stack.append(cursor)
+                    cursor = entity  # type: dict[str, any]
+                else:
+                    cursor = stack.pop()
+                indent = padding
+            name = line[padding:sep]  # type: str
+            entity = line[sep + 1:].lstrip()
+            if not entity: entity = {}
+            cursor[name] = entity
+        return result
 
     def send(self, command, data, retcode=0):  # type: (int, any, int)->None
         msg = {'ret': retcode, 'command': command, 'data': data}

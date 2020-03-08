@@ -7,7 +7,7 @@ from shared import Commands, Errors, TCP
 class ClientSlaveConnection(TCP):
     def __init__(self):
         super(ClientSlaveConnection, self).__init__()
-        self.info = {}  # type: dict
+        self.system_information = {}  # type: dict
         self.timestamp = 0.0
         self.heart_beat_interval = 2.0
 
@@ -21,23 +21,25 @@ class ClientSlaveConnection(TCP):
         self.send(command=Commands.HEART_BEAT_REQ, data={'ts': time.mktime(time.localtime())})
 
     def connectionMade(self):
-        self.send_slave_info(command=Commands.SLAVE_INFO_NOTIFY)
+        self.send_slave_info(command=Commands.SYSTEM_INFO_NOTIFY)
         self.send_heart_beat()
 
     def send_slave_info(self, command):
-        ifconfig = os.popen('ifconfig').read()  # type: str
-        hardware = os.popen('system_profiler SPHardwareDataType').read() # type: str
-        uname = os.popen('uname -a').read() # type: str
-        whoami = os.popen('whoami').read() # type: str
-        self.info = {'uname': uname[:-1], 'whoami': whoami[:-1], 'hardware': hardware[:-1], 'ifconfig': ifconfig[:-1], 'ts': round(time.mktime(time.localtime()))}
-        self.send(command=command, data=self.info)
+        data = {'ifconfig': os.popen('ifconfig').read(),
+                'uname'   : os.popen('uname -a').read()[:-1],
+                'whoami'  : os.popen('whoami').read()[:-1]}
+        # ifconfig = os.popen('ifconfig').read()  # type: str
+        for name in 'SPHardwareDataType SPNetworkDataType SPStorageDataType SPDisplaysDataType SPUSBDataType SPAirPortDataType'.split(' '):
+            data[name] = os.popen('system_profiler {} 2>/dev/null'.format(name)).read() # type: str
+        self.system_information = data
+        self.send(command=command, data=self.system_information)
 
     def packReceived(self, data):
         msg = json.loads(data, encoding='utf-8')
         command = msg.get('command') # type: int
         payload = msg.get('data') # type: dict
-        if command == Commands.SLAVE_INFO_REQ:
-            self.send_slave_info(command=Commands.SLAVE_INFO_RSP)
+        if command == Commands.SYSTEM_INFO_REQ:
+            self.send_slave_info(command=Commands.SYSTEM_INFO_RSP)
         print(msg)
 
 class ClientSlaveConnectionFactory(ReconnectingClientFactory):

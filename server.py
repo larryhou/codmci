@@ -23,12 +23,17 @@ class SlaveConnection(TCP):
         self.factory.slaves[self.address] = self
         self.print('new slave #total={}'.format(len(self.factory.slaves)))
 
+    def decode(self, info):
+        print(json.dumps(self.decode_system_information(info), ensure_ascii=False))
+
     def packReceived(self, data):
         msg = json.loads(data, encoding='utf-8')
         command = msg.get('command')  # type: int
         payload = msg.get('data')  # type: dict
-        if command in (Commands.SLAVE_INFO_RSP, Commands.SLAVE_INFO_NOTIFY):
+        if command in (Commands.SYSTEM_INFO_RSP, Commands.SYSTEM_INFO_NOTIFY):
             self.ifconfig = payload
+            self.decode(payload.get('SPNetworkDataType'))
+            self.decode(payload.get('SPAirPortDataType'))
             self.acknowledge(command)
         elif command == Commands.HEART_BEAT_REQ:
             self.send(command=Commands.HEART_BEAT_RSP, data=payload)
