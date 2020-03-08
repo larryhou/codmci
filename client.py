@@ -41,7 +41,11 @@ class ClientSlaveConnection(TCP):
         end = uname.find(' ', beg+1)
         rsp['Machine'] = uname[beg+1:end]
         rsp['CPU'] = psutil.cpu_percent()
-        rsp['MEM'] = psutil.virtual_memory()._asdict()
+        memory = rsp['MEM'] = psutil.virtual_memory()._asdict()
+        for k, v in memory.items():
+            if v < 1024: continue
+            memory[k] = float(v) / (1 << 20)
+        memory['unit'] = 'MB'
         hardware = self.decode_system_information(self.system_information.get('SPHardwareDataType'))
         rsp.update(hardware)
         storage = self.decode_system_information(self.system_information.get('SPStorageDataType'))
