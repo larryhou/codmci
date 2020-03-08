@@ -2,14 +2,22 @@ from twisted.internet.protocol import Protocol
 import json, struct, io
 
 TRANSPORT_MAGIC_NUMBER = 0x12345678
+__commands__ = {}
 
 class Commands(object):
     ACKNOWLEDGE = 0
-    SYSTEM_INFO_REQ = 1
-    SYSTEM_INFO_RSP = 2
-    SYSTEM_INFO_NOTIFY = 1001
-    HEART_BEAT_REQ = 3
-    HEART_BEAT_RSP = 4
+    SYSTEM_INFORMATION_REQ = 1
+    SYSTEM_INFORMATION_RSP = 2
+    SYSTEM_INFORMATION_NOTIFY = 1002
+    HEARTBEAT_REQ = 3
+    HEARTBEAT_RSP = 4
+    SLAVE_STATE_REQ = 5
+    SLAVE_STATE_RSP = 6
+    NETWORK_SLAVE_STATES_REQ = 7
+    NETWORK_SLAVE_STATES_RSP = 8
+    NETWORK_SLAVES_NOTIFY = 1008
+    SERVE_AS_SLAVE_REQ = 9
+    SERVE_AS_SLAVE_RSP = 10
 
 class Errors(object):
     ERROR_FORMAT = -1
@@ -21,12 +29,22 @@ class TCP(Protocol):
         self.__size = 0
         self.__received = 0
         self.__stage = 0
+        self.__commands = __commands__
+        if not self.__commands:
+            for k, v in vars(Commands).items():
+                if not k.isupper(): continue
+                name = ''.join([x.title() for x in k.split('_')])
+                self.__commands[v] = name
+
+    def get_command_name(self, command):
+        return self.__commands.get(command) or 'Unknown'
 
     @staticmethod
     def decode_system_information(text):
         string = io.StringIO(text)
         cursor = result = {}
         stack = []
+        depth = {}
         indent = 0
         entity = None
         for line in string.readlines():
@@ -41,18 +59,23 @@ class TCP(Protocol):
             if indent != padding:
                 if indent < padding:
                     stack.append(cursor)
+                    depth[padding] = len(stack)
                     cursor = entity  # type: dict[str, any]
                 else:
-                    cursor = stack.pop()
+                    shift = (len(stack) - depth[padding]) if padding in depth else 1
+                    while shift > 0:
+                        cursor = stack.pop()
+                        shift -= 1
                 indent = padding
-            name = line[padding:sep]  # type: str
+            name = line[padding:sep].replace(' ', '')  # type: str
             entity = line[sep + 1:].lstrip()
             if not entity: entity = {}
             cursor[name] = entity
         return result
 
-    def send(self, command, data, retcode=0):  # type: (int, any, int)->None
-        msg = {'ret': retcode, 'command': command, 'data': data}
+    def send(self, command, data=None, retcode=0):  # type: (int, any, int)->None
+        msg = {'ret': retcode, 'command': command}
+        if data: msg['data'] = data
         raw = json.dumps(msg, ensure_ascii=False).encode('utf-8')
         self.transport.write(struct.pack('>I', TRANSPORT_MAGIC_NUMBER))
         self.transport.write(struct.pack('>I', len(raw) + 8))
