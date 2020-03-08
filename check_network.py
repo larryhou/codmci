@@ -23,7 +23,6 @@ class CheckProtocol(TCP):
         if command == Commands.NETWORK_SLAVES_NOTIFY:
             self.transport.loseConnection()
             for it in payload:
-                if not self.options.hardware: del it['Hardware']
                 if not self.options.storage: del it['Storage']
                 if not self.options.wifi: del it['Wi-Fi']
             print(json.dumps(payload, ensure_ascii=False, indent=4))
@@ -43,7 +42,6 @@ def main():
     arguments = argparse.ArgumentParser()
     arguments.add_argument('--server', '-s', required=True, type=str, help='server address')
     arguments.add_argument('--port', '-p', required=True, type=int, help='server port')
-    arguments.add_argument('--hardware', '-hw', action='store_true')
     arguments.add_argument('--storage', '-sg', action='store_true')
     arguments.add_argument('--wifi', '-wf', action='store_true')
     options = arguments.parse_args(sys.argv[1:])
