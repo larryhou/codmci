@@ -53,7 +53,7 @@ class ClientSlaveConnection(TCP):
         network = self.decode_system_information(self.system_information.get('SPNetworkDataType'))
         for k, v in network['Network'].items():
             if 'IPv4Addresses' in v:
-                rsp[k] = v
+                rsp['Network'] = v
                 break
         self.send(command=Commands.SLAVE_STATE_RSP, data=rsp)
 
