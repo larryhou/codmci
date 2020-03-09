@@ -5,23 +5,31 @@ import json, struct, io, datetime
 TRANSPORT_MAGIC_NUMBER = 0x12345678
 __commands__ = {}
 
+class CollaborateMissions(object):
+    REPORT_SLAVE_STATE = 0
+
+class BroadcastTypes(object):
+    CHAT = 0
+
 class Commands(object):
     ACKNOWLEDGE = 0
     SYSTEM_INFORMATION_REQ = 1
     SYSTEM_INFORMATION_RSP = 2
-    SYSTEM_INFORMATION_NOTIFY = 1002
+    SYSTEM_INFORMATION_NOTIFY = 10002
     HEARTBEAT_REQ = 3
     HEARTBEAT_RSP = 4
-    SLAVE_STATE_REQ = 5
-    SLAVE_STATE_RSP = 6
-    NETWORK_SLAVE_STATES_REQ = 7
-    NETWORK_SLAVE_STATES_RSP = 8
-    NETWORK_SLAVES_NOTIFY = 1008
+    COLLABORATE_MISSION_REQ = 5
+    COLLABORATE_MISSION_RSP = 6
+    COLLABORATE_COMPLETE_REQ = 500
+    COLLABORATE_COMPLETE_RSP = 600
+    COLLABORATE_REQ = 7
+    COLLABORATE_RSP = 8
+    COLLABORATE_NOTIFY = 10008
     SERVE_AS_SLAVE_REQ = 9
     SERVE_AS_SLAVE_RSP = 10
     BROADCAST_REQ = 11
     BROADCAST_RSP = 12
-    BROADCAST_NOTIFY = 1012
+    BROADCAST_NOTIFY = 10012
 
 class Errors(object):
     ERROR_FORMAT = -1
@@ -90,7 +98,7 @@ class TCP(Protocol):
         if data is not None: msg['data'] = data
         msg['ts'] = datetime.datetime.now().timestamp()
         if command not in (Commands.HEARTBEAT_RSP, Commands.HEARTBEAT_REQ):
-            self.print('{} {}'.format(self.get_command_name(command), json.dumps(msg, ensure_ascii=False)))
+            self.print('<<< {} {}'.format(self.get_command_name(command), json.dumps(msg, ensure_ascii=False)))
         raw = json.dumps(msg, ensure_ascii=False).encode('utf-8')
         self.transport.write(struct.pack('>I', TRANSPORT_MAGIC_NUMBER))
         self.transport.write(struct.pack('>I', len(raw) + 8))

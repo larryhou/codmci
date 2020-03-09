@@ -3,10 +3,10 @@
 from twisted.internet import reactor, task
 from twisted.internet.protocol import Factory, connectionDone
 from twisted.internet.endpoints import IPv4Address
-from shared import Commands, Errors, TCP
+from shared import Commands, Errors, TCP, CollaborateMissions
 import json, time, datetime
 
-class NetworkManager(object):
+class CollaborateManager(object):
     def __init__(self, factory):
         self.factory = factory # type: ClientConnectionFactory
         self.__obserers = {}
@@ -14,6 +14,8 @@ class NetworkManager(object):
         self.__received = {}
         self.__timestamp = 0
         self.__running = False
+        self.mission_timeout = 10.0
+        self.failure_allowed = True
 
     @property
     def running(self): return self.__running
@@ -21,15 +23,18 @@ class NetworkManager(object):
     def update(self):
         if len(self.__waitings) > 0:
             timestamp = datetime.datetime.now().timestamp()
-            if timestamp - self.__timestamp > 1.0:
-                removing = []
-                for addr, _ in self.__waitings.items():
-                    if addr not in self.factory.clients: removing.append(addr)
-                for addr in removing: del self.__waitings[addr]
-            if timestamp - self.__timestamp > 10.0 or len(self.__waitings) == 0:
+            if len(self.__waitings) == 0:
                 self.__broadcast()
+            elif 0 < self.mission_timeout <= (timestamp - self.__timestamp):
+                self.__broadcast() if self.failure_allowed else self.__abort()
 
-    def __clear(self):
+    def __abort(self):
+        for addr, _ in self.__obserers.items():
+            client = self.factory.clients.get(addr)  # type: ClientConnection
+            if client: client.send(command=Commands.COLLABORATE_NOTIFY, retcode=-1)
+        self.__reset()
+
+    def __reset(self):
         self.__init__(self.factory)
 
     def __broadcast(self):
@@ -41,33 +46,40 @@ class NetworkManager(object):
             notify.append(item)
         for addr, _ in self.__obserers.items():
             client = self.factory.clients[addr] # type: ClientConnection
-            client.send(command=Commands.NETWORK_SLAVES_NOTIFY, data=notify)
-        self.__clear()
+            client.send(command=Commands.COLLABORATE_NOTIFY, data=notify)
+        self.__reset()
 
-    def request(self, addr):
-        self.__register(addr)
+    def dispatch_missions(self, sender, parameters):
+        if not parameters: parameters = {}
+        if 'mission_timeout' in parameters:
+            self.mission_timeout = max(10.0, parameters['mission_timeout'])
+        if 'failure_allowed' in parameters:
+            self.failure_allowed = parameters['failure_allowed']
+        self.__register_observer(sender)
         if self.factory.slave_count == 0:
             self.__broadcast()
             return
-        print('++ request slave states', addr)
+        print('++ dispatch missions', sender)
         if self.__running: return
         self.__running = True
         self.__timestamp = datetime.datetime.now().timestamp()
-
         for _, client in self.factory.clients.items(): # type: IPv4Address, ClientConnection
             if not client.is_slave: continue
-            client.send_network_state_request()
-            print('## collect state #{}'.format(client.uuid), client.address)
+            client.dispatch_collaborate_mission(parameters)
+            print('## dispatch mission #{}'.format(client.uuid), client.address)
             self.__waitings[client.address] = True
 
-    def receive(self, addr, rsp): # type: (IPv4Address, dict)->None
-        self.__received[addr] = rsp
-        print('>> receive state', addr)
+    def finish(self, addr):
         del self.__waitings[addr]
         if len(self.__waitings) == 0:
             self.__broadcast()
 
-    def __register(self, addr):
+    def receive(self, addr, rsp): # type: (IPv4Address, dict)->None
+        self.__received[addr] = rsp
+        print('>> receive mission artifact', addr)
+        self.finish(addr)
+
+    def __register_observer(self, addr):
         self.__obserers[addr] = True
 
 class ClientConnection(TCP):
@@ -78,8 +90,10 @@ class ClientConnection(TCP):
         self.ifconfig = ''
         self.is_slave = False
 
-    def send_network_state_request(self):
-        self.send(command=Commands.SLAVE_STATE_REQ, data={'index': self.uuid})
+    def dispatch_collaborate_mission(self, parameters):
+        mission = {'id': self.uuid}
+        mission.update(parameters)
+        self.send(command=Commands.COLLABORATE_MISSION_REQ, data=mission)
 
     def connectionMade(self):
         self.factory.clients[self.address] = self
@@ -92,6 +106,8 @@ class ClientConnection(TCP):
         msg = json.loads(data, encoding='utf-8')
         command = msg.get('command')  # type: int
         payload = msg.get('data')  # type: dict
+        if command not in self.factory.silent_commands:
+            self.print('>>> {} {}'.format(self.get_command_name(command), data.decode('utf-8')))
         if command in (Commands.SYSTEM_INFORMATION_RSP, Commands.SYSTEM_INFORMATION_NOTIFY):
             self.ifconfig = payload
             self.decode(payload.get('SPHardwareDataType'))
@@ -103,20 +119,23 @@ class ClientConnection(TCP):
         elif command == Commands.HEARTBEAT_REQ:
             self.send(command=Commands.HEARTBEAT_RSP, data=payload)
             return
-        elif command == Commands.NETWORK_SLAVE_STATES_REQ:
-            self.send(command=Commands.NETWORK_SLAVE_STATES_RSP, data={'msg': 'wait for asynchronous notify'})
-            self.factory.network.request(addr=self.address)
-        elif command == Commands.SLAVE_STATE_RSP:
-            self.factory.network.receive(addr=self.address, rsp=msg)
+        elif command == Commands.COLLABORATE_REQ:
+            self.send(command=Commands.COLLABORATE_RSP, data={'msg': 'wait for asynchronous notify'})
+            self.factory.collaborate.dispatch_missions(sender=self.address, parameters=payload)
+        elif command == Commands.COLLABORATE_MISSION_RSP: # accept mission
+            if payload and not payload.get('accepted'):
+                self.factory.collaborate.finish(addr=self.address)
+        elif command == Commands.COLLABORATE_COMPLETE_REQ:
+            self.send(command=Commands.COLLABORATE_COMPLETE_RSP)
+            self.factory.collaborate.receive(addr=self.address, rsp=msg)
         elif command == Commands.BROADCAST_REQ:
             self.send(command=Commands.BROADCAST_RSP)
-            notify = {'sender': {'ip':self.address.host, 'port':self.address.port}}
+            notify = {'sender': {'ip': self.address.host, 'port': self.address.port}}
             notify.update(payload)
             for _, client in self.factory.clients.items():
                 if client != self: client.send(command=Commands.BROADCAST_NOTIFY, data=notify)
         elif command < 100:
             self.send(command=command+1, data={'msg': 'success with auto response'})
-        self.print('{} {}'.format(self.get_command_name(command), data.decode('utf-8')))
 
     def connectionLost(self, reason=connectionDone):
         del self.factory.clients[self.address]
@@ -127,11 +146,15 @@ class ClientConnectionFactory(Factory):
     def __init__(self):
         self.clients = {}  # type: dict[IPv4Address, ClientConnection]
         self.sequence = 0
-        self.network = NetworkManager(self)
+        self.collaborate = CollaborateManager(self)
         self.slave_count = 0
+        self.silent_commands = (
+            Commands.HEARTBEAT_REQ,
+            Commands.HEARTBEAT_RSP,
+        )
 
     def update(self):
-        self.network.update()
+        self.collaborate.update()
 
     def buildProtocol(self, addr):
         client = ClientConnection(factory=self, addr=addr)

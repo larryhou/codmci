@@ -5,7 +5,7 @@ import json
 from twisted.internet import reactor
 from twisted.internet.protocol import ClientFactory
 
-from shared import Commands, TCP
+from shared import Commands, TCP, BroadcastTypes, CollaborateMissions
 
 
 class CheckProtocol(TCP):
@@ -14,14 +14,14 @@ class CheckProtocol(TCP):
         self.options = options
 
     def connectionMade(self):
-        self.send(command=Commands.NETWORK_SLAVE_STATES_REQ)
-        self.send(command=Commands.BROADCAST_REQ, data={'action':'check'})
+        self.send(command=Commands.COLLABORATE_REQ, data={'mission': CollaborateMissions.REPORT_SLAVE_STATE})
+        self.send(command=Commands.BROADCAST_REQ, data={'msg': 'Hi~', 'type': BroadcastTypes.CHAT})
 
     def packReceived(self, data):
         msg = json.loads(data, encoding='utf-8') # type: dict
         command = msg.get('command') # type: int
         payload = msg.get('data')
-        if command == Commands.NETWORK_SLAVES_NOTIFY:
+        if command == Commands.COLLABORATE_NOTIFY:
             self.transport.loseConnection()
             for it in payload:
                 if not self.options.storage:
