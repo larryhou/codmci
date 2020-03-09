@@ -75,7 +75,7 @@ class ClientConnection(TCP):
 
     def print(self, msg):
         ts = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-        print('[{}] #{} \033[33m{} \033[36m{}\033[0m'.format(ts, self.uuid, self.address_string, msg))
+        print('[{}] #{} {} {}'.format(ts, self.uuid, self.address_string, msg))
 
     def send_network_state_request(self):
         self.send(command=Commands.SLAVE_STATE_REQ, data={'index': self.uuid})
