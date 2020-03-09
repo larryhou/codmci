@@ -9,8 +9,8 @@ from shared import Commands, TCP
 
 
 class CheckProtocol(TCP):
-    def __init__(self, options):
-        super(CheckProtocol, self).__init__()
+    def __init__(self, options, address):
+        super(CheckProtocol, self).__init__(address=address)
         self.options = options
 
     def connectionMade(self):
@@ -34,7 +34,7 @@ class CheckFactory(ClientFactory):
         self.options = options
 
     def buildProtocol(self, addr):
-        return CheckProtocol(options=self.options)
+        return CheckProtocol(options=self.options, address=addr)
 
     def clientConnectionLost(self, connector, reason):
         reactor.stop()

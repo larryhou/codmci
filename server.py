@@ -36,7 +36,7 @@ class NetworkManager(object):
         notify = []
         for addr, rsp in self.__received.items(): # type: IPv4Address, dict
             data = rsp.get('data')
-            item = {'Address': '{}:{}'.format(addr.host, addr.port)}
+            item = {'Port': addr.port}
             item.update(data)
             notify.append(item)
         for addr, _ in self.__obserers.items():
@@ -46,16 +46,24 @@ class NetworkManager(object):
 
     def request(self, addr):
         self.__register(addr)
+        if self.factory.slave_count == 0:
+            print('++ request slave states ignored #obs={}'.format(len(self.__obserers)), addr)
+            self.__broadcast()
+            return
+        print('++ request slave states', addr)
         if self.__running: return
         self.__running = True
         self.__timestamp = datetime.datetime.now().timestamp()
+
         for _, client in self.factory.clients.items(): # type: IPv4Address, ClientConnection
             if not client.is_slave: continue
             client.send_network_state_request()
-            self.__waitings[client.address] = False
+            print('## collect state #{}'.format(client.uuid), client.address)
+            self.__waitings[client.address] = True
 
     def receive(self, addr, rsp): # type: (IPv4Address, dict)->None
         self.__received[addr] = rsp
+        print('>> receive state', addr)
         del self.__waitings[addr]
         if len(self.__waitings) == 0:
             self.__broadcast()
@@ -65,24 +73,18 @@ class NetworkManager(object):
 
 class ClientConnection(TCP):
     def __init__(self, factory, addr):
-        super(ClientConnection, self).__init__()
+        super(ClientConnection, self).__init__(address=addr)
         self.factory = factory # type: ClientConnectionFactory
-        self.address = addr # type: IPv4Address
-        self.address_string = '{}:{}'.format(self.address.host, self.address.port)
         self.uuid = -1
         self.ifconfig = ''
         self.is_slave = False
-
-    def print(self, msg):
-        ts = datetime.datetime.now().isoformat()
-        print('[{}] #{} {} {}'.format(ts, self.uuid, self.address_string, msg))
 
     def send_network_state_request(self):
         self.send(command=Commands.SLAVE_STATE_REQ, data={'index': self.uuid})
 
     def connectionMade(self):
         self.factory.clients[self.address] = self
-        self.print('new client #total={}'.format(len(self.factory.clients)))
+        self.print('new client #total={} #slaves={}'.format(len(self.factory.clients), self.factory.slave_count))
 
     def decode(self, info):
         print(json.dumps(self.decode_system_information(info), ensure_ascii=False, indent=4))
@@ -96,8 +98,9 @@ class ClientConnection(TCP):
             self.decode(payload.get('SPHardwareDataType'))
             self.acknowledge(command)
         elif command == Commands.SERVE_AS_SLAVE_REQ:
-            self.send(command=Commands.SERVE_AS_SLAVE_RSP)
             self.is_slave = True
+            self.factory.slave_count += 1
+            self.send(command=Commands.SERVE_AS_SLAVE_RSP)
         elif command == Commands.HEARTBEAT_REQ:
             self.send(command=Commands.HEARTBEAT_RSP, data=payload)
             return
@@ -112,13 +115,15 @@ class ClientConnection(TCP):
 
     def connectionLost(self, reason=connectionDone):
         del self.factory.clients[self.address]
-        self.print('connection lost #remain={}'.format(len(self.factory.clients)))
+        if self.is_slave: self.factory.slave_count -= 1
+        self.print('connection lost #total={} #slaves={}'.format(len(self.factory.clients), self.factory.slave_count))
 
 class ClientConnectionFactory(Factory):
     def __init__(self):
         self.clients = {}  # type: dict[IPv4Address, ClientConnection]
         self.sequence = 0
         self.network = NetworkManager(self)
+        self.slave_count = 0
 
     def update(self):
         self.network.update()

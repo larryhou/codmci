@@ -7,15 +7,10 @@ from shared import Commands, Errors, TCP
 
 class ClientSlaveConnection(TCP):
     def __init__(self, address):
-        super(ClientSlaveConnection, self).__init__()
-        self.address = address # type: IPv4Address
+        super(ClientSlaveConnection, self).__init__(address)
         self.system_information = {}  # type: dict
         self.timestamp = 0.0
         self.heart_beat_interval = 10.0
-
-    def print(self, msg):
-        ts = datetime.datetime.now().isoformat()
-        print('[{}] {}:{} {}'.format(ts, self.address.host, self.address.port, msg))
 
     def update(self):
         timestamp = time.mktime(time.localtime())
@@ -61,8 +56,10 @@ class ClientSlaveConnection(TCP):
         rsp.update(storage)
         network = self.run_system_profiler('SPNetworkDataType')
         for k, v in network['Network'].items():
-            if 'IPv4Addresses' in v:
+            address = v.get('IPv4Addresses')
+            if address:
                 rsp['Network'] = v
+                rsp['Address'] = address
                 break
         self.send(command=Commands.SLAVE_STATE_RSP, data=rsp)
 

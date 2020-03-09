@@ -1,4 +1,5 @@
 from twisted.internet.protocol import Protocol
+from twisted.internet.endpoints import IPv4Address
 import json, struct, io, datetime
 
 TRANSPORT_MAGIC_NUMBER = 0x12345678
@@ -24,7 +25,8 @@ class Errors(object):
 
 class TCP(Protocol):
 
-    def __init__(self):
+    def __init__(self, address):
+        self.address = address # type: IPv4Address
         self.__pack = b''
         self.__size = 0
         self.__received = 0
@@ -35,6 +37,10 @@ class TCP(Protocol):
                 if not k.isupper(): continue
                 name = ''.join([x.title() for x in k.split('_')])
                 self.__commands[v] = name
+
+    def print(self, msg):
+        ts = datetime.datetime.now().isoformat()
+        print('[{}] {}:{} {}'.format(ts, self.address.host, self.address.port, msg))
 
     def get_command_name(self, command):
         return self.__commands.get(command) or 'Unknown'
@@ -75,8 +81,10 @@ class TCP(Protocol):
 
     def send(self, command, data=None, retcode=0):  # type: (int, any, int)->None
         msg = {'ret': retcode, 'command': command}
-        if data: msg['data'] = data
+        if data is not None: msg['data'] = data
         msg['ts'] = datetime.datetime.now().timestamp()
+        if command not in (Commands.HEARTBEAT_RSP, Commands.HEARTBEAT_REQ):
+            self.print('{} {}'.format(self.get_command_name(command), json.dumps(msg, ensure_ascii=False)))
         raw = json.dumps(msg, ensure_ascii=False).encode('utf-8')
         self.transport.write(struct.pack('>I', TRANSPORT_MAGIC_NUMBER))
         self.transport.write(struct.pack('>I', len(raw) + 8))
