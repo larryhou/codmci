@@ -14,7 +14,8 @@ class CheckProtocol(TCP):
         self.options = options
 
     def connectionMade(self):
-        self.send(command=Commands.NETWORK_SLAVE_STATES_REQ, data={})
+        self.send(command=Commands.NETWORK_SLAVE_STATES_REQ)
+        self.send(command=Commands.BROADCAST_REQ, data={'action':'check'})
 
     def packReceived(self, data):
         msg = json.loads(data, encoding='utf-8') # type: dict

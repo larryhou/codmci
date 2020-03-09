@@ -19,6 +19,9 @@ class Commands(object):
     NETWORK_SLAVES_NOTIFY = 1008
     SERVE_AS_SLAVE_REQ = 9
     SERVE_AS_SLAVE_RSP = 10
+    BROADCAST_REQ = 11
+    BROADCAST_RSP = 12
+    BROADCAST_NOTIFY = 1012
 
 class Errors(object):
     ERROR_FORMAT = -1

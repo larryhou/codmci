@@ -108,6 +108,10 @@ class ClientConnection(TCP):
             self.factory.network.request(addr=self.address)
         elif command == Commands.SLAVE_STATE_RSP:
             self.factory.network.receive(addr=self.address, rsp=msg)
+        elif command == Commands.BROADCAST_REQ:
+            self.send(command=Commands.BROADCAST_RSP)
+            for _, client in self.factory.clients.items():
+                if client != self: client.send(command=Commands.BROADCAST_NOTIFY, data=payload)
         elif command < 100:
             self.send(command=command+1, data={'msg': 'success with auto response'})
         self.print('{} {}'.format(self.get_command_name(command), data.decode('utf-8')))
