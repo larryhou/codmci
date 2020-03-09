@@ -47,7 +47,6 @@ class NetworkManager(object):
     def request(self, addr):
         self.__register(addr)
         if self.factory.slave_count == 0:
-            print('++ request slave states ignored #obs={}'.format(len(self.__obserers)), addr)
             self.__broadcast()
             return
         print('++ request slave states', addr)
