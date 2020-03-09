@@ -23,8 +23,10 @@ class CheckProtocol(TCP):
         if command == Commands.NETWORK_SLAVES_NOTIFY:
             self.transport.loseConnection()
             for it in payload:
-                if not self.options.storage: del it['Storage']
-                if not self.options.network: del it['Network']
+                if not self.options.storage:
+                    if 'Storage' in it: del it['Storage']
+                if not self.options.network:
+                    if 'Network' in it: del it['Network']
             print(json.dumps(payload, ensure_ascii=False, indent=4))
 
 class CheckFactory(ClientFactory):
@@ -40,7 +42,7 @@ class CheckFactory(ClientFactory):
 def main():
     import argparse, sys
     arguments = argparse.ArgumentParser()
-    arguments.add_argument('--server', '-s', required=True, type=str, help='server address')
+    arguments.add_argument('--server', '-s', default='localhost', type=str, help='server address')
     arguments.add_argument('--port', '-p', required=True, type=int, help='server port')
     arguments.add_argument('--storage', '-g', action='store_true')
     arguments.add_argument('--network', '-n', action='store_true')

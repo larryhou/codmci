@@ -1,5 +1,5 @@
 from twisted.internet.protocol import Protocol
-import json, struct, io
+import json, struct, io, datetime
 
 TRANSPORT_MAGIC_NUMBER = 0x12345678
 __commands__ = {}
@@ -76,6 +76,7 @@ class TCP(Protocol):
     def send(self, command, data=None, retcode=0):  # type: (int, any, int)->None
         msg = {'ret': retcode, 'command': command}
         if data: msg['data'] = data
+        msg['ts'] = datetime.datetime.now().timestamp()
         raw = json.dumps(msg, ensure_ascii=False).encode('utf-8')
         self.transport.write(struct.pack('>I', TRANSPORT_MAGIC_NUMBER))
         self.transport.write(struct.pack('>I', len(raw) + 8))

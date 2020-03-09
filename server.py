@@ -74,7 +74,7 @@ class ClientConnection(TCP):
         self.is_slave = False
 
     def print(self, msg):
-        ts = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
+        ts = datetime.datetime.now().isoformat()
         print('[{}] #{} {} {}'.format(ts, self.uuid, self.address_string, msg))
 
     def send_network_state_request(self):
@@ -82,7 +82,7 @@ class ClientConnection(TCP):
 
     def connectionMade(self):
         self.factory.clients[self.address] = self
-        self.print('new client {} #total={}'.format(self.address_string,len(self.factory.clients)))
+        self.print('new client #total={}'.format(len(self.factory.clients)))
 
     def decode(self, info):
         print(json.dumps(self.decode_system_information(info), ensure_ascii=False, indent=4))
