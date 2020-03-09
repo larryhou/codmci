@@ -53,6 +53,7 @@ class TCP(Protocol):
         depth = {}
         indent = 0
         entity = None
+        entity_name = ''
         for line in string.readlines():
             line = line[:-1].rstrip()
             if not line: continue
@@ -66,6 +67,8 @@ class TCP(Protocol):
                 if indent < padding:
                     stack.append(cursor)
                     depth[padding] = len(stack)
+                    if not isinstance(entity, dict):
+                        entity = cursor[entity_name] = {}
                     cursor = entity  # type: dict[str, any]
                 else:
                     shift = (len(stack) - depth[padding]) if padding in depth else 1
@@ -73,10 +76,10 @@ class TCP(Protocol):
                         cursor = stack.pop()
                         shift -= 1
                 indent = padding
-            name = line[padding:sep].replace(' ', '')  # type: str
+            entity_name = line[padding:sep].replace(' ', '')  # type: str
             entity = line[sep + 1:].lstrip()
             if not entity: entity = {}
-            cursor[name] = entity
+            cursor[entity_name] = entity
         return result
 
     def send(self, command, data=None, retcode=0):  # type: (int, any, int)->None

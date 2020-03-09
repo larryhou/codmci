@@ -34,7 +34,7 @@ class ClientSlaveConnection(TCP):
         data = {'uname': os.popen('uname -a').read()[:-1],
                 'whoami': os.popen('whoami').read()[:-1]}
         for name in 'SPHardwareDataType SPDisplaysDataType SPUSBDataType'.split(' '):
-            data[name] = os.popen('system_profiler {} 2>/dev/null'.format(name)).read()  # type: str
+            data[name] = self.run_system_profiler(name)
         self.system_information = data
         self.send(command=command, data=self.system_information)
 
@@ -50,7 +50,7 @@ class ClientSlaveConnection(TCP):
             if v < 1024: continue
             memory[k] = float(v) / (1 << 20)
         memory['unit'] = 'MB'
-        hardware = self.decode_system_information(self.system_information.get('SPHardwareDataType'))
+        hardware = self.system_information.get('SPHardwareDataType')
         rsp.update(hardware)
         storage = self.run_system_profiler('SPStorageDataType')
         rsp.update(storage)

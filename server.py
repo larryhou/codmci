@@ -86,7 +86,7 @@ class ClientConnection(TCP):
         self.print('new client #total={} #slaves={}'.format(len(self.factory.clients), self.factory.slave_count))
 
     def decode(self, info):
-        print(json.dumps(self.decode_system_information(info), ensure_ascii=False, indent=4))
+        print(json.dumps(info, ensure_ascii=False, indent=4))
 
     def packReceived(self, data):
         msg = json.loads(data, encoding='utf-8')
