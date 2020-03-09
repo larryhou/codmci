@@ -82,7 +82,7 @@ class ClientConnection(TCP):
 
     def connectionMade(self):
         self.factory.clients[self.address] = self
-        self.print('new client #total={}'.format(len(self.factory.clients)))
+        self.print('new client {} #total={}'.format(self.address_string,len(self.factory.clients)))
 
     def decode(self, info):
         print(json.dumps(self.decode_system_information(info), ensure_ascii=False, indent=4))
