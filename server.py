@@ -110,7 +110,7 @@ class ClientConnection(TCP):
             self.factory.network.receive(addr=self.address, rsp=msg)
         elif command < 100:
             self.send(command=command+1, data={'msg': 'success with auto response'})
-        self.print('{} {}'.format(self.get_command_name(command), msg))
+        self.print('{} {}'.format(self.get_command_name(command), data.decode('utf-8')))
 
     def connectionLost(self, reason=connectionDone):
         del self.factory.clients[self.address]
