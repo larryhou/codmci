@@ -73,7 +73,7 @@ class ClientSlaveConnection(TCP):
             self.send_client_state()
         elif command == Commands.HEARTBEAT_RSP:
             return
-        self.print('{} {}'.format(self.get_command_name(command), msg))
+        self.print('{} {}'.format(self.get_command_name(command), data.decode('utf-8')))
 
 class ClientSlaveConnectionFactory(ReconnectingClientFactory):
     def __init__(self):
