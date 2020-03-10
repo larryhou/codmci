@@ -7,15 +7,15 @@ __author__ = 'larryhou'
 TRANSPORT_MAGIC_NUMBER = 0x12345678
 
 class Enum(object):
-    __reverse_map = {}
+    __name_map = {}
 
     @classmethod
     def name(cls, x):
-        if not cls.__reverse_map:
+        if not cls.__name_map:
             for k, v in vars(cls).items():
                 name = ''.join([x.title() for x in k.split('_')])
-                if k.isupper(): cls.__reverse_map[v] = name
-        return cls.__reverse_map.get(x)
+                if k.isupper(): cls.__name_map[v] = name
+        return cls.__name_map.get(x)
 
 class CollaborateMissions(Enum):
     REPORT_SLAVE_STATE = 20000
