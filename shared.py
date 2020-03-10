@@ -2,6 +2,8 @@ from twisted.internet.protocol import Protocol
 from twisted.internet.endpoints import IPv4Address
 import json, struct, io, datetime
 
+__author__ = 'larryhou'
+
 TRANSPORT_MAGIC_NUMBER = 0x12345678
 
 class Enum(object):

@@ -5,6 +5,8 @@ from twisted.internet import reactor, task
 from twisted.internet.endpoints import IPv4Address
 from shared import Commands, ProtocolExceptions, TCP, CollaborateMissions
 
+__author__ = 'larryhou'
+
 class ClientSlaveConnection(TCP):
     def __init__(self, address, factory):
         super(ClientSlaveConnection, self).__init__(address)

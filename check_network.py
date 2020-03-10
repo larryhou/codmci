@@ -7,6 +7,7 @@ from twisted.internet.protocol import ClientFactory
 
 from shared import *
 
+__author__ = 'larryhou'
 
 class CheckProtocol(TCP):
     def __init__(self, options, address):
