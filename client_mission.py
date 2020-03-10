@@ -4,7 +4,6 @@ import datetime, psutil
 
 __author__ = 'larryhou'
 
-
 class Mission(object):
     def __init__(self, client, parameters):
         self.client = client  # type: ClientSlaveConnection

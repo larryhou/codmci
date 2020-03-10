@@ -2,6 +2,8 @@
 
 import io
 
+__author__ = 'larryhou'
+
 def decode_system_information(text):
     string = io.StringIO(text)
     cursor = result = {}
