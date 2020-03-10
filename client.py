@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import os, json, time, psutil, datetime, subprocess
+import os, json, time, psutil, datetime
 from twisted.internet.protocol import ReconnectingClientFactory
 from twisted.internet import reactor, task
 from twisted.internet.endpoints import IPv4Address
@@ -44,9 +44,7 @@ class ClientSlaveConnection(TCP):
         self.send_heartbeat()
 
     def run_system_profiler(self, name):
-        p = subprocess.Popen('system_profiler {}'.format(name), stdout=subprocess.PIPE)
-        stdout, _ = p.communicate()
-        text = stdout.decode('utf-8')
+        text = os.popen('system_profiler {} 2>/dev/null'.format(name)).read()
         return self.decode_system_information(text) if text else {}
 
     def send_system_information(self, command):
