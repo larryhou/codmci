@@ -8,14 +8,14 @@
 	<array>
 		<string>/usr/local/bin/python3</string>
 		<string>-u</string>
-        <string>/opt/codmci/server.py</string>
+        <string>~/.codmci/server.py</string>
         <string>-p</string>
         <string>12345</string>
 	</array>
 	<key>StandardOutPath</key>
-	<string>/var/log/codmci/queen/server.log</string>
+	<string>~/.codmci/log/queen/server.log</string>
 	<key>StandardErrorPath</key>
-	<string>/var/log/codmci/queen/error.log</string>
+	<string>~/.codmci/log/queen/error.log</string>
 	<key>RunAtLoad</key>
 	<true/>
 	<key>KeepAlive</key>

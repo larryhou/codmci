@@ -8,16 +8,16 @@
 	<array>
 		<string>/usr/local/bin/python3</string>
 		<string>-u</string>
-        <string>/opt/codmci/client.py</string>
+        <string>~/.codmci/client.py</string>
         <string>-p</string>
         <string>12345</string>
 		<string>-s</string>
         <string>localhost</string>
 	</array>
 	<key>StandardOutPath</key>
-	<string>/var/log/codmci/slave/client.log</string>
+	<string>~/.codmci/log/slave/client.log</string>
 	<key>StandardErrorPath</key>
-	<string>/var/log/codmci/slave/error.log</string>
+	<string>~/.codmci/log/slave/error.log</string>
 	<key>RunAtLoad</key>
 	<true/>
 	<key>KeepAlive</key>
