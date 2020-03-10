@@ -16,7 +16,7 @@ class Enum(object):
             for k, v in vars(cls).items():
                 name = ''.join([x.title() for x in k.split('_')])
                 if k.isupper(): cls.__name_map[v] = name
-        return cls.__name_map.get(value)
+        return cls.__name_map.get(value) or 'Unknown'
 
 class CollaborateMissions(Enum):
     REPORT_SLAVE_STATE = 20000
@@ -66,7 +66,7 @@ class TCP(Protocol):
         print('[{}] {}:{} {}'.format(ts, self.address.host, self.address.port, msg))
 
     def get_command_name(self, command):
-        return Commands.name(command) or 'Unknown'
+        return Commands.name(command)
 
     @staticmethod
     def decode_system_information(text):
