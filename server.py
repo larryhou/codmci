@@ -61,7 +61,8 @@ class CollaborateScheduler(object):
         if self.factory.slave_count == 0:
             self.__broadcast()
             return
-        print('++ dispatch missions', sender)
+        print('++ dispatch missions sender={} parameters={} running={} mission_timeout={} timeout_allowed={}'
+              .format(sender, parameters, self.running, self.mission_timeout, self.timeout_allowed))
         if self.__running: return
         self.__running = True
         self.__timestamp = datetime.datetime.now().timestamp()
