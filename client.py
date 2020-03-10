@@ -43,7 +43,7 @@ class ClientSlaveConnection(TCP):
         self.send_system_information(command=Commands.SYSTEM_INFORMATION_NOTIFY)
         self.send_heartbeat()
 
-    def __run_system_profiler(self, name):
+    def run_system_profiler(self, name):
         text = os.popen('system_profiler {} 2>/dev/null'.format(name)).read()
         return self.decode_system_information(text) if text else {}
 
@@ -51,45 +51,19 @@ class ClientSlaveConnection(TCP):
         data = {'uname': os.popen('uname -a').read()[:-1],
                 'whoami': os.popen('whoami').read()[:-1]}
         for name in 'SPHardwareDataType SPStorageDataType SPNetworkDataType SPDisplaysDataType SPUSBDataType'.split(' '):
-            data[name] = self.__run_system_profiler(name)
+            data[name] = self.run_system_profiler(name)
         self.system_information = data
         self.send(command=command, data=self.system_information)
 
-    def send_realtime_state(self, parameters):
-        msg = {'User': self.system_information.get('whoami')}
-        uname = self.system_information.get('uname')  # type: str
-        beg = uname.find(' ')
-        end = uname.find(' ', beg + 1)
-        msg['Machine'] = uname[beg + 1:end]
-        msg['CPU'] = psutil.cpu_percent()
-        memory = msg['MEM'] = psutil.virtual_memory()._asdict()
-        for k, v in memory.items():
-            if v < 1024: continue
-            memory[k] = float(v) / (1 << 20)
-        memory['unit'] = 'MB'
-        hardware = self.system_information.get('SPHardwareDataType')
-        msg.update(hardware)
-        storage = self.__run_system_profiler('SPStorageDataType')
-        msg.update(storage)
-        network = self.__run_system_profiler('SPNetworkDataType')
-        for k, v in network['Network'].items():
-            address = v.get('IPv4Addresses')
-            if address:
-                msg['Network'] = v
-                msg['Address'] = address
-                break
-        msg.update(parameters)
-        msg['etime'] = datetime.datetime.now().timestamp()
-        self.send(command=Commands.COLLABORATE_COMPLETE_REQ, data=msg)
-
     def dispatch_collaborate_mission(self, parameters):
         import client_mission
-        mission = CollaborateMissions.REPORT_SLAVE_STATE
+        mission = CollaborateMissions.REPORT_REALTIME_STATS
         parameters['stime'] = datetime.datetime.now().timestamp()
         if 'mission' in parameters:
             mission = int(parameters['mission'])
-        if mission == CollaborateMissions.REPORT_SLAVE_STATE:
-            self.send_realtime_state(parameters)
+        if mission == CollaborateMissions.REPORT_REALTIME_STATS:
+            client_mission.\
+                ReportRealtimeStatsMission(client=self, parameters=parameters).schedule()
         elif mission == CollaborateMissions.REPORT_PERFORMANCE:
             client_mission.\
                 ReportPerformanceMission(client=self, parameters=parameters).schedule()

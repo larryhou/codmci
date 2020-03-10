@@ -51,7 +51,7 @@ def main():
     arguments.add_argument('--port', '-p', required=True, type=int, help='server port')
     arguments.add_argument('--storage', '-g', action='store_true')
     arguments.add_argument('--network', '-n', action='store_true')
-    arguments.add_argument('--mission', '-m', type=int, default=CollaborateMissions.REPORT_SLAVE_STATE)
+    arguments.add_argument('--mission', '-m', type=int, default=CollaborateMissions.REPORT_REALTIME_STATS)
     arguments.add_argument('--timeout', '-t', type=float, default=10)
     arguments.add_argument('--verbose', '-v', action='store_true')
     options = arguments.parse_args(sys.argv[1:])
