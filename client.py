@@ -3,7 +3,7 @@ import os, json, time, psutil, datetime
 from twisted.internet.protocol import ReconnectingClientFactory
 from twisted.internet import reactor, task
 from twisted.internet.endpoints import IPv4Address
-from shared import Commands, ProtocolExceptions, TCP, CollaborateMissions
+from shared import Commands, Exceptions, TCP, CollaborateMissions
 from client_mission import *
 
 __author__ = 'larryhou'

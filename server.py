@@ -28,7 +28,7 @@ class CollaborateScheduler(object):
             if len(self.__waitings) == 0:
                 self.__broadcast()
             elif 0 < self.mission_timeout <= (timestamp - self.__timestamp):
-                self.__broadcast() if self.timeout_allowed else self.__abort(error=ProtocolExceptions.COLLABORATE_TIMEOUT)
+                self.__broadcast() if self.timeout_allowed else self.__abort(error=Exceptions.COLLABORATE_TIMEOUT)
 
     def __abort(self, error):
         for addr, _ in self.__obserers.items():

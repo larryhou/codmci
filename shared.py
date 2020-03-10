@@ -46,7 +46,7 @@ class Commands(Enum):
     BROADCAST_RSP = 12
     BROADCAST_NOTIFY = 10012
 
-class ProtocolExceptions(Enum):
+class Exceptions(Enum):
     ERROR_FORMAT = -1
     NOT_IMPLEMENTED = -2
     COLLABORATE_TIMEOUT = -3

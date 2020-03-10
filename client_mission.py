@@ -28,7 +28,7 @@ class NotImplementedMission(Mission):
     def schedule(self):
         self.etime(self.parameters)
         self.client.send(command=Commands.COLLABORATE_COMPLETE_REQ,
-                         retcode=ProtocolExceptions.NOT_IMPLEMENTED,
+                         retcode=Exceptions.NOT_IMPLEMENTED,
                          data=self.parameters,
                          info='not implemented mission')
         self.finish()
