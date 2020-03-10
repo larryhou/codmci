@@ -34,7 +34,7 @@ class ClientSlaveConnection(TCP):
     def send_system_information(self, command):
         data = {'uname': os.popen('uname -a').read()[:-1],
                 'whoami': os.popen('whoami').read()[:-1]}
-        for name in 'SPHardwareDataType SPDisplaysDataType SPUSBDataType'.split(' '):
+        for name in 'SPHardwareDataType SPStorageDataType SPNetworkDataType SPDisplaysDataType SPUSBDataType'.split(' '):
             data[name] = self.__run_system_profiler(name)
         self.system_information = data
         self.send(command=command, data=self.system_information)

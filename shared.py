@@ -3,15 +3,25 @@ from twisted.internet.endpoints import IPv4Address
 import json, struct, io, datetime
 
 TRANSPORT_MAGIC_NUMBER = 0x12345678
-__commands__ = {}
 
-class CollaborateMissions(object):
+class Enum(object):
+    __reverse_map = {}
+
+    @classmethod
+    def name(cls, x):
+        if not cls.__reverse_map:
+            for k, v in vars(cls).items():
+                name = ''.join([x.title() for x in k.split('_')])
+                if k.isupper(): cls.__reverse_map[v] = name
+        return cls.__reverse_map.get(x)
+
+class CollaborateMissions(Enum):
     REPORT_SLAVE_STATE = 20000
 
-class BroadcastTypes(object):
+class Broadcasts(Enum):
     CHAT = 30000
 
-class Commands(object):
+class Commands(Enum):
     ACKNOWLEDGE = 0
     SYSTEM_INFORMATION_REQ = 1
     SYSTEM_INFORMATION_RSP = 2
@@ -31,32 +41,25 @@ class Commands(object):
     BROADCAST_RSP = 12
     BROADCAST_NOTIFY = 10012
 
-class ProtocolExceptions(object):
+class ProtocolExceptions(Enum):
     ERROR_FORMAT = -1
     NOT_IMPLEMENTED = -2
     COLLABORATE_TIMEOUT = -3
 
 class TCP(Protocol):
-
     def __init__(self, address):
         self.address = address # type: IPv4Address
         self.__pack = b''
         self.__size = 0
         self.__received = 0
         self.__stage = 0
-        self.__commands = __commands__
-        if not self.__commands:
-            for k, v in vars(Commands).items():
-                if not k.isupper(): continue
-                name = ''.join([x.title() for x in k.split('_')])
-                self.__commands[v] = name
 
     def print(self, msg):
         ts = datetime.datetime.now().isoformat()
         print('[{}] {}:{} {}'.format(ts, self.address.host, self.address.port, msg))
 
     def get_command_name(self, command):
-        return self.__commands.get(command) or 'Unknown'
+        return Commands.name(command) or 'Unknown'
 
     @staticmethod
     def decode_system_information(text):

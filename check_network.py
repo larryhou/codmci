@@ -15,7 +15,7 @@ class CheckProtocol(TCP):
 
     def connectionMade(self):
         self.send(command=Commands.COLLABORATE_REQ, data={'mission': self.options.mission})
-        self.send(command=Commands.BROADCAST_REQ, data={'msg': 'Hi~', 'type': BroadcastTypes.CHAT})
+        self.send(command=Commands.BROADCAST_REQ, data={'msg': 'Hi~', 'type': Broadcasts.CHAT})
 
     def packReceived(self, data):
         msg = json.loads(data, encoding='utf-8') # type: dict

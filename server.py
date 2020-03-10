@@ -6,7 +6,7 @@ from twisted.internet.endpoints import IPv4Address
 from shared import *
 import json, time, datetime
 
-class CollaborateManager(object):
+class CollaborateScheduler(object):
     def __init__(self, factory, mission):
         self.factory = factory # type: ClientConnectionFactory
         self.mission = mission # type: int
@@ -147,7 +147,7 @@ class ClientConnectionFactory(Factory):
     def __init__(self):
         self.clients = {}  # type: dict[IPv4Address, ClientConnection]
         self.__sequence = 0
-        self.__collaborates = {}  # type: dict[int, CollaborateManager]
+        self.__collaborates = {}  # type: dict[int, CollaborateScheduler]
         self.slave_count = 0
         self.silent_commands = (
             Commands.HEARTBEAT_REQ,
@@ -156,7 +156,7 @@ class ClientConnectionFactory(Factory):
 
     def get(self, mission):
         if mission not in self.__collaborates:
-            self.__collaborates[mission] = CollaborateManager(factory=self, mission=mission)
+            self.__collaborates[mission] = CollaborateScheduler(factory=self, mission=mission)
         return self.__collaborates.get(mission)
 
     def update(self):
