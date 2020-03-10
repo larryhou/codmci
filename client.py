@@ -3,7 +3,7 @@ import os, json, time, psutil, datetime
 from twisted.internet.protocol import ReconnectingClientFactory
 from twisted.internet import reactor, task
 from twisted.internet.endpoints import IPv4Address
-from shared import Commands, Errors, TCP, CollaborateMissions
+from shared import Commands, ProtocolExceptions, TCP, CollaborateMissions
 
 class ClientSlaveConnection(TCP):
     def __init__(self, address, factory):
@@ -67,6 +67,7 @@ class ClientSlaveConnection(TCP):
         self.send(command=Commands.COLLABORATE_COMPLETE_REQ, data=msg)
 
     def dispatch_collaborate_mission(self, parameters):
+        import client_mission
         mission = CollaborateMissions.REPORT_SLAVE_STATE
         parameters['stime'] = datetime.datetime.now().timestamp()
         if 'mission' in parameters:
@@ -74,7 +75,7 @@ class ClientSlaveConnection(TCP):
         if mission == CollaborateMissions.REPORT_SLAVE_STATE:
             self.send_realtime_state(parameters)
         else:
-            self.send_realtime_state(parameters)
+            client_mission.NotImplementedMission(client=self, parameters=parameters).schedule()
 
     def packReceived(self, data):
         msg = json.loads(data, encoding='utf-8')
@@ -85,8 +86,12 @@ class ClientSlaveConnection(TCP):
         if command == Commands.SYSTEM_INFORMATION_REQ:
             self.send_system_information(command=Commands.SYSTEM_INFORMATION_RSP)
         elif command == Commands.COLLABORATE_MISSION_REQ:
-            self.send(command=Commands.COLLABORATE_MISSION_RSP, data={'accepted': True})
+            respond = {'accepted': True}
+            respond.update(payload)
+            self.send(command=Commands.COLLABORATE_MISSION_RSP, data=respond)
             self.dispatch_collaborate_mission(parameters=payload)
+        elif command == Commands.BROADCAST_NOTIFY:
+            pass
 
 class ClientSlaveConnectionFactory(ReconnectingClientFactory):
     def __init__(self):

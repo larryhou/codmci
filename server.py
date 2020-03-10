@@ -3,12 +3,13 @@
 from twisted.internet import reactor, task
 from twisted.internet.protocol import Factory, connectionDone
 from twisted.internet.endpoints import IPv4Address
-from shared import Commands, Errors, TCP, CollaborateMissions
+from shared import *
 import json, time, datetime
 
 class CollaborateManager(object):
-    def __init__(self, factory):
+    def __init__(self, factory, mission):
         self.factory = factory # type: ClientConnectionFactory
+        self.mission = mission # type: int
         self.__obserers = {}
         self.__waitings = {}
         self.__received = {}
@@ -21,27 +22,27 @@ class CollaborateManager(object):
     def running(self): return self.__running
 
     def update(self):
-        if len(self.__waitings) > 0:
+        if self.__running > 0:
             timestamp = datetime.datetime.now().timestamp()
             if len(self.__waitings) == 0:
                 self.__broadcast()
             elif 0 < self.mission_timeout <= (timestamp - self.__timestamp):
-                self.__broadcast() if self.failure_allowed else self.__abort()
+                self.__broadcast() if self.failure_allowed else self.__abort(error=ProtocolExceptions.COLLABORATE_TIMEOUT)
 
-    def __abort(self):
+    def __abort(self, error):
         for addr, _ in self.__obserers.items():
             client = self.factory.clients.get(addr)  # type: ClientConnection
-            if client: client.send(command=Commands.COLLABORATE_NOTIFY, retcode=-1)
+            if client: client.send(command=Commands.COLLABORATE_NOTIFY, retcode=error)
         self.__reset()
 
     def __reset(self):
-        self.__init__(self.factory)
+        self.__init__(self.factory, mission=self.mission)
 
     def __broadcast(self):
         notify = []
         for addr, rsp in self.__received.items(): # type: IPv4Address, dict
             data = rsp.get('data')
-            item = {'Port': addr.port}
+            item = {'client': {'address':addr.host, 'port':addr.port}}
             item.update(data)
             notify.append(item)
         for addr, _ in self.__obserers.items():
@@ -99,7 +100,7 @@ class ClientConnection(TCP):
         self.factory.clients[self.address] = self
         self.print('new client #total={} #slaves={}'.format(len(self.factory.clients), self.factory.slave_count))
 
-    def decode(self, info):
+    def dump_json(self, info):
         print(json.dumps(info, ensure_ascii=False, indent=4))
 
     def packReceived(self, data):
@@ -110,7 +111,7 @@ class ClientConnection(TCP):
             self.print('>>> {} {}'.format(self.get_command_name(command), data.decode('utf-8')))
         if command in (Commands.SYSTEM_INFORMATION_RSP, Commands.SYSTEM_INFORMATION_NOTIFY):
             self.ifconfig = payload
-            self.decode(payload.get('SPHardwareDataType'))
+            self.dump_json(payload.get('SPHardwareDataType'))
             self.acknowledge(command)
         elif command == Commands.SERVE_AS_SLAVE_REQ:
             self.is_slave = True
@@ -121,13 +122,13 @@ class ClientConnection(TCP):
             return
         elif command == Commands.COLLABORATE_REQ:
             self.send(command=Commands.COLLABORATE_RSP, data={'msg': 'wait for asynchronous notify'})
-            self.factory.collaborate.dispatch_missions(sender=self.address, parameters=payload)
+            self.factory.get(mission=payload['mission']).dispatch_missions(sender=self.address, parameters=payload)
         elif command == Commands.COLLABORATE_MISSION_RSP: # accept mission
             if payload and not payload.get('accepted'):
-                self.factory.collaborate.finish(addr=self.address)
+                self.factory.get(mission=payload['mission']).finish(addr=self.address)
         elif command == Commands.COLLABORATE_COMPLETE_REQ:
             self.send(command=Commands.COLLABORATE_COMPLETE_RSP)
-            self.factory.collaborate.receive(addr=self.address, rsp=msg)
+            self.factory.get(mission=payload['mission']).receive(addr=self.address, rsp=msg)
         elif command == Commands.BROADCAST_REQ:
             self.send(command=Commands.BROADCAST_RSP)
             notify = {'sender': {'ip': self.address.host, 'port': self.address.port}}
@@ -145,21 +146,27 @@ class ClientConnection(TCP):
 class ClientConnectionFactory(Factory):
     def __init__(self):
         self.clients = {}  # type: dict[IPv4Address, ClientConnection]
-        self.sequence = 0
-        self.collaborate = CollaborateManager(self)
+        self.__sequence = 0
+        self.__collaborates = {}  # type: dict[int, CollaborateManager]
         self.slave_count = 0
         self.silent_commands = (
             Commands.HEARTBEAT_REQ,
             Commands.HEARTBEAT_RSP,
         )
 
+    def get(self, mission):
+        if mission not in self.__collaborates:
+            self.__collaborates[mission] = CollaborateManager(factory=self, mission=mission)
+        return self.__collaborates.get(mission)
+
     def update(self):
-        self.collaborate.update()
+        for addr, collaborate in self.__collaborates.items():
+            collaborate.update()
 
     def buildProtocol(self, addr):
         client = ClientConnection(factory=self, addr=addr)
-        client.uuid = self.sequence
-        self.sequence += 1
+        client.uuid = self.__sequence
+        self.__sequence += 1
         return client
 
 def main():

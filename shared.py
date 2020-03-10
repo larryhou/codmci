@@ -6,10 +6,10 @@ TRANSPORT_MAGIC_NUMBER = 0x12345678
 __commands__ = {}
 
 class CollaborateMissions(object):
-    REPORT_SLAVE_STATE = 0
+    REPORT_SLAVE_STATE = 20000
 
 class BroadcastTypes(object):
-    CHAT = 0
+    CHAT = 30000
 
 class Commands(object):
     ACKNOWLEDGE = 0
@@ -31,8 +31,10 @@ class Commands(object):
     BROADCAST_RSP = 12
     BROADCAST_NOTIFY = 10012
 
-class Errors(object):
+class ProtocolExceptions(object):
     ERROR_FORMAT = -1
+    NOT_IMPLEMENTED = -2
+    COLLABORATE_TIMEOUT = -3
 
 class TCP(Protocol):
 
@@ -93,16 +95,18 @@ class TCP(Protocol):
             cursor[entity_name] = entity
         return result
 
-    def send(self, command, data=None, retcode=0):  # type: (int, any, int)->None
-        msg = {'ret': retcode, 'command': command}
-        if data is not None: msg['data'] = data
-        msg['ts'] = datetime.datetime.now().timestamp()
+    def send(self, command, data=None, retcode=0, info=''):
+        request = {'retcode': retcode, 'command': command}
+        if data is not None: request['data'] = data
+        request['ts'] = datetime.datetime.now().timestamp()
+        if retcode != 0:
+            data['error'] = {'info':info, 'code':retcode}
         if command not in (Commands.HEARTBEAT_RSP, Commands.HEARTBEAT_REQ):
-            self.print('<<< {} {}'.format(self.get_command_name(command), json.dumps(msg, ensure_ascii=False)))
-        raw = json.dumps(msg, ensure_ascii=False).encode('utf-8')
+            self.print('<<< {} {}'.format(self.get_command_name(command), json.dumps(request, ensure_ascii=False)))
+        serialized_request = json.dumps(request, ensure_ascii=False).encode('utf-8')
         self.transport.write(struct.pack('>I', TRANSPORT_MAGIC_NUMBER))
-        self.transport.write(struct.pack('>I', len(raw) + 8))
-        self.transport.write(raw)
+        self.transport.write(struct.pack('>I', len(serialized_request) + 8))
+        self.transport.write(serialized_request)
 
     def packReceived(self, data): # type: (bytes)->None
         pass
