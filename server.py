@@ -17,7 +17,7 @@ class CollaborateScheduler(object):
         self.__timestamp = 0
         self.__running = False
         self.mission_timeout = 10.0
-        self.failure_allowed = True
+        self.timeout_allowed = True
 
     @property
     def running(self): return self.__running
@@ -28,7 +28,7 @@ class CollaborateScheduler(object):
             if len(self.__waitings) == 0:
                 self.__broadcast()
             elif 0 < self.mission_timeout <= (timestamp - self.__timestamp):
-                self.__broadcast() if self.failure_allowed else self.__abort(error=ProtocolExceptions.COLLABORATE_TIMEOUT)
+                self.__broadcast() if self.timeout_allowed else self.__abort(error=ProtocolExceptions.COLLABORATE_TIMEOUT)
 
     def __abort(self, error):
         for addr, _ in self.__obserers.items():
@@ -55,8 +55,8 @@ class CollaborateScheduler(object):
         if not parameters: parameters = {}
         if 'mission_timeout' in parameters:
             self.mission_timeout = max(10.0, parameters['mission_timeout'])
-        if 'failure_allowed' in parameters:
-            self.failure_allowed = parameters['failure_allowed']
+        if 'timeout_allowed' in parameters:
+            self.timeout_allowed = parameters['timeout_allowed']
         self.__register_observer(sender)
         if self.factory.slave_count == 0:
             self.__broadcast()
