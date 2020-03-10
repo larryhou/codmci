@@ -77,9 +77,14 @@ class ClientSlaveConnection(TCP):
         if mission == CollaborateMissions.REPORT_SLAVE_STATE:
             self.send_realtime_state(parameters)
         elif mission == CollaborateMissions.REPORT_PERFORMANCE:
-            client_mission.ReportPerformanceMission(client=self, parameters=parameters).schedule()
+            client_mission.\
+                ReportPerformanceMission(client=self, parameters=parameters).schedule()
+        elif mission == CollaborateMissions.REPORT_SYSTEM_PROFILER:
+            client_mission.\
+                ReportSystemProfiler(client=self, parameters=parameters).schedule()
         else:
-            client_mission.NotImplementedMission(client=self, parameters=parameters).schedule()
+            client_mission.\
+                NotImplementedMission(client=self, parameters=parameters).schedule()
 
     def packReceived(self, data):
         msg = json.loads(data, encoding='utf-8')

@@ -15,7 +15,8 @@ class CheckProtocol(TCP):
         self.options = options
 
     def connectionMade(self):
-        self.send(command=Commands.COLLABORATE_REQ, data={'mission': self.options.mission})
+        self.send(command=Commands.COLLABORATE_REQ,
+                  data={'mission': self.options.mission, 'mission_timeout':self.options.timeout})
         self.send(command=Commands.BROADCAST_REQ, data={'msg': 'Hi~', 'type': Broadcasts.CHAT})
 
     def packReceived(self, data):
@@ -50,6 +51,7 @@ def main():
     arguments.add_argument('--storage', '-g', action='store_true')
     arguments.add_argument('--network', '-n', action='store_true')
     arguments.add_argument('--mission', '-m', type=int, default=CollaborateMissions.REPORT_SLAVE_STATE)
+    arguments.add_argument('--timeout', '-t', type=float, default=60)
     options = arguments.parse_args(sys.argv[1:])
     reactor.connectTCP(options.server, options.port, CheckFactory(options))
     reactor.run()

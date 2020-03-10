@@ -1,6 +1,7 @@
 from twisted.internet.protocol import Protocol
 from twisted.internet.endpoints import IPv4Address
 import json, struct, io, datetime
+from serialization import decode_system_information
 
 __author__ = 'larryhou'
 
@@ -20,6 +21,7 @@ class Enum(object):
 class CollaborateMissions(Enum):
     REPORT_SLAVE_STATE = 20000
     REPORT_PERFORMANCE = 20001
+    REPORT_SYSTEM_PROFILER = 20002
 
 class Broadcasts(Enum):
     CHAT = 30000
@@ -66,40 +68,7 @@ class TCP(Protocol):
 
     @staticmethod
     def decode_system_information(text):
-        string = io.StringIO(text)
-        cursor = result = {}
-        stack = []
-        depth = {}
-        indent = 0
-        entity = None
-        entity_name = ''
-        for line in string.readlines():
-            line = line[:-1].rstrip()
-            if not line: continue
-            padding = 0
-            for n in range(len(line)):
-                if line[n] != ' ':
-                    padding = n
-                    break
-            sep = line.find(':')
-            if indent != padding:
-                if indent < padding:
-                    stack.append(cursor)
-                    depth[padding] = len(stack)
-                    if not isinstance(entity, dict):
-                        entity = cursor[entity_name] = {}
-                    cursor = entity  # type: dict[str, any]
-                else:
-                    shift = (len(stack) - depth[padding]) if padding in depth else 1
-                    while shift > 0:
-                        cursor = stack.pop()
-                        shift -= 1
-                indent = padding
-            entity_name = line[padding:sep].replace(' ', '')  # type: str
-            entity = line[sep + 1:].lstrip()
-            if not entity: entity = {}
-            cursor[entity_name] = entity
-        return result
+        return decode_system_information(text)
 
     def send(self, command, data=None, retcode=0, info=''):
         request = {'retcode': retcode, 'command': command}
