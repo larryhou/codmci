@@ -54,7 +54,7 @@ class CollaborateScheduler(object):
     def dispatch_missions(self, sender, parameters):
         if not parameters: parameters = {}
         if 'mission_timeout' in parameters:
-            self.mission_timeout = max(10.0, parameters['mission_timeout'])
+            self.mission_timeout = float(parameters['mission_timeout'])
         if 'timeout_allowed' in parameters:
             self.timeout_allowed = parameters['timeout_allowed']
         self.__register_observer(sender)
