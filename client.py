@@ -76,6 +76,8 @@ class ClientSlaveConnection(TCP):
             mission = int(parameters['mission'])
         if mission == CollaborateMissions.REPORT_SLAVE_STATE:
             self.send_realtime_state(parameters)
+        elif mission == CollaborateMissions.REPORT_PERFORMANCE:
+            client_mission.ReportPerformanceMission(client=self, parameters=parameters).schedule()
         else:
             client_mission.NotImplementedMission(client=self, parameters=parameters).schedule()
 

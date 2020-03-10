@@ -19,6 +19,7 @@ class Enum(object):
 
 class CollaborateMissions(Enum):
     REPORT_SLAVE_STATE = 20000
+    REPORT_PERFORMANCE = 20001
 
 class Broadcasts(Enum):
     CHAT = 30000
