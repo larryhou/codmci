@@ -44,6 +44,9 @@ class CheckFactory(ClientFactory):
     def clientConnectionLost(self, connector, reason):
         reactor.stop()
 
+    def clientConnectionFailed(self, connector, reason):
+        reactor.stop()
+
 def main():
     import argparse, sys
     arguments = argparse.ArgumentParser()
