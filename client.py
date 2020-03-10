@@ -4,6 +4,7 @@ from twisted.internet.protocol import ReconnectingClientFactory
 from twisted.internet import reactor, task
 from twisted.internet.endpoints import IPv4Address
 from shared import Commands, ProtocolExceptions, TCP, CollaborateMissions
+from client_mission import *
 
 __author__ = 'larryhou'
 
@@ -14,12 +15,25 @@ class ClientSlaveConnection(TCP):
         self.system_information = {}  # type: dict
         self.timestamp = 0.0
         self.heart_beat_interval = 10.0
+        self.__missions = {} # type: dict[int, Mission]
+        self.__mission_sequence = 0
+
+    def register_mission(self, mission):
+        self.__mission_sequence += 1
+        self.__missions[self.__mission_sequence] = mission
+        return self.__mission_sequence
+
+    def unregister_mission(self, sequence):
+        if sequence in self.__missions:
+            del self.__missions[sequence]
 
     def update(self):
         timestamp = time.mktime(time.localtime())
         if timestamp - self.timestamp >= self.heart_beat_interval:
             self.timestamp = timestamp
             self.send_heartbeat()
+        for mission in self.__missions:
+            mission.update()
 
     def send_heartbeat(self):
         self.send(command=Commands.HEARTBEAT_REQ, data={'ts': time.mktime(time.localtime())})

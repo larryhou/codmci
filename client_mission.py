@@ -9,9 +9,16 @@ class Mission(object):
     def __init__(self, client, parameters):
         self.client = client  # type: ClientSlaveConnection
         self.parameters = parameters  # type: dict
+        self.__sequence = self.client.register_mission(mission=self)
 
     def schedule(self):
         pass
+
+    def update(self):
+        pass
+
+    def finish(self):
+        self.client.unregister_mission(self.__sequence)
 
     def etime(self, data):
         data['etime'] = datetime.datetime.now().timestamp()
@@ -24,18 +31,20 @@ class NotImplementedMission(Mission):
                          retcode=ProtocolExceptions.NOT_IMPLEMENTED,
                          data=self.__parameters,
                          info='not implemented mission')
+        self.finish()
 
 
 class ReportPerformanceMission(Mission):
     def schedule(self):
-        respond = {'CPU':psutil.cpu_percent()}
-        memory = respond['MEM'] = psutil.virtual_memory()._asdict()
+        respond = {'cpu':psutil.cpu_percent()}
+        memory = respond['mem'] = psutil.virtual_memory()._asdict()
         for k, v in memory.items():
             if v < 1024: continue
             memory[k] = float(v) / (1 << 20)
         self.etime(self.parameters)
         respond.update(self.parameters)
         self.client.send(command=Commands.COLLABORATE_COMPLETE_REQ, data=respond)
+        self.finish()
 
 class ReportSystemProfiler(Mission):
     def schedule(self):
@@ -45,3 +54,4 @@ class ReportSystemProfiler(Mission):
         self.etime(self.parameters)
         respond.update(self.parameters)
         self.client.send(command=Commands.COLLABORATE_COMPLETE_REQ, data=respond)
+        self.finish()
