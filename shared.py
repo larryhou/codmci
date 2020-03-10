@@ -15,7 +15,9 @@ class Enum(object):
         if not cls.__name_map:
             for k, v in vars(cls).items():
                 name = ''.join([x.title() for x in k.split('_')])
-                if k.isupper(): cls.__name_map[v] = name
+                if k.isupper():
+                    assert v not in cls.__name_map
+                    cls.__name_map[v] = name
         return cls.__name_map.get(value) or 'Unknown'
 
 class CollaborateMissions(Enum):
@@ -33,18 +35,18 @@ class Commands(Enum):
     SYSTEM_INFORMATION_NOTIFY = 10002
     HEARTBEAT_REQ = 3
     HEARTBEAT_RSP = 4
-    COLLABORATE_MISSION_REQ = 5
-    COLLABORATE_MISSION_RSP = 6
-    COLLABORATE_COMPLETE_REQ = 500
-    COLLABORATE_COMPLETE_RSP = 600
-    COLLABORATE_REQ = 7
-    COLLABORATE_RSP = 8
-    COLLABORATE_NOTIFY = 10008
-    SERVE_AS_SLAVE_REQ = 9
-    SERVE_AS_SLAVE_RSP = 10
-    BROADCAST_REQ = 11
-    BROADCAST_RSP = 12
-    BROADCAST_NOTIFY = 10012
+    COLLABORATE_REQ = 5
+    COLLABORATE_RSP = 6
+    COLLABORATE_NOTIFY = 10006
+    COLLABORATE_MISSION_REQ = 7
+    COLLABORATE_MISSION_RSP = 8
+    COLLABORATE_COMPLETE_REQ = 9
+    COLLABORATE_COMPLETE_RSP = 10
+    SERVE_AS_SLAVE_REQ = 11
+    SERVE_AS_SLAVE_RSP = 12
+    BROADCAST_REQ = 13
+    BROADCAST_RSP = 14
+    BROADCAST_NOTIFY = 10014
 
 class Exceptions(Enum):
     ERROR_FORMAT = -1
