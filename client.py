@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-import os, json, time, psutil, datetime
+import os, json, time, psutil, datetime, subprocess
 from twisted.internet.protocol import ReconnectingClientFactory
 from twisted.internet import reactor, task
 from twisted.internet.endpoints import IPv4Address
-from shared import Commands, Exceptions, TCP, CollaborateMissions
+from shared import *
 from client_mission import *
 
 __author__ = 'larryhou'
@@ -32,7 +32,7 @@ class ClientSlaveConnection(TCP):
         if timestamp - self.timestamp >= self.heart_beat_interval:
             self.timestamp = timestamp
             self.send_heartbeat()
-        for mission in self.__missions:
+        for _, mission in self.__missions.items():
             mission.update()
 
     def send_heartbeat(self):
@@ -44,7 +44,9 @@ class ClientSlaveConnection(TCP):
         self.send_heartbeat()
 
     def run_system_profiler(self, name):
-        text = os.popen('system_profiler {} 2>/dev/null'.format(name)).read()
+        p = subprocess.Popen('system_profiler {}'.format(name), stdout=subprocess.PIPE)
+        stdout, _ = p.communicate()
+        text = stdout.decode('utf-8')
         return self.decode_system_information(text) if text else {}
 
     def send_system_information(self, command):
