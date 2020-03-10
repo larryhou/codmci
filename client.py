@@ -57,16 +57,16 @@ class ClientSlaveConnection(TCP):
 
     def dispatch_collaborate_mission(self, parameters):
         import client_mission
-        mission = CollaborateMissions.REPORT_REALTIME_STATS
+        mission = CollaborateMissions.REPORT_SYSTEM_STATS
         parameters['stime'] = datetime.datetime.now().timestamp()
         if 'mission' in parameters:
             mission = int(parameters['mission'])
-        if mission == CollaborateMissions.REPORT_REALTIME_STATS:
+        if mission == CollaborateMissions.REPORT_SYSTEM_STATS:
             client_mission.\
-                ReportRealtimeStatsMission(client=self, parameters=parameters).schedule()
-        elif mission == CollaborateMissions.REPORT_PERFORMANCE:
+                ReportSystemStatsMission(client=self, parameters=parameters).schedule()
+        elif mission == CollaborateMissions.REPORT_PERFORMANCE_STATS:
             client_mission.\
-                ReportPerformanceMission(client=self, parameters=parameters).schedule()
+                ReportPerformanceStatsMission(client=self, parameters=parameters).schedule()
         elif mission == CollaborateMissions.REPORT_SYSTEM_PROFILER:
             client_mission.\
                 ReportSystemProfilerMission(client=self, parameters=parameters).schedule()

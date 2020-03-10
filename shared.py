@@ -21,8 +21,8 @@ class Enum(object):
         return cls.__name_map.get(value) or 'Unknown'
 
 class CollaborateMissions(Enum):
-    REPORT_REALTIME_STATS = 20000
-    REPORT_PERFORMANCE = 20001
+    REPORT_SYSTEM_STATS = 20000
+    REPORT_PERFORMANCE_STATS = 20001
     REPORT_SYSTEM_PROFILER = 20002
 
 class Broadcasts(Enum):

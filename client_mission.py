@@ -34,7 +34,7 @@ class NotImplementedMission(Mission):
         self.finish()
 
 
-class ReportPerformanceMission(Mission):
+class ReportPerformanceStatsMission(Mission):
     def schedule(self):
         respond = {'cpu':psutil.cpu_percent()}
         memory = respond['mem'] = psutil.virtual_memory()._asdict()
@@ -56,7 +56,7 @@ class ReportSystemProfilerMission(Mission):
         self.client.send(command=Commands.COLLABORATE_COMPLETE_REQ, data=respond)
         self.finish()
 
-class ReportRealtimeStatsMission(Mission):
+class ReportSystemStatsMission(Mission):
     def schedule(self):
         respond = {'User': self.client.system_information.get('whoami')}
         uname = self.client.system_information.get('uname')  # type: str
