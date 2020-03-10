@@ -100,7 +100,7 @@ class ClientConnection(TCP):
 
     def connectionMade(self):
         self.factory.clients[self.address] = self
-        self.print('new client #total={} #slaves={}'.format(len(self.factory.clients), self.factory.slave_count))
+        self.print('new connection #total={} #slaves={}'.format(len(self.factory.clients), self.factory.slave_count))
 
     def dump_json(self, info):
         print(json.dumps(info, ensure_ascii=False, indent=4))
@@ -118,6 +118,7 @@ class ClientConnection(TCP):
         elif command == Commands.SERVE_AS_SLAVE_REQ:
             self.is_slave = True
             self.factory.slave_count += 1
+            self.print('new slave #total={} #slaves={}'.format(len(self.factory.clients), self.factory.slave_count))
             self.send(command=Commands.SERVE_AS_SLAVE_RSP)
         elif command == Commands.HEARTBEAT_REQ:
             self.send(command=Commands.HEARTBEAT_RSP, data=payload)
