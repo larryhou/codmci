@@ -46,7 +46,7 @@ class ReportPerformanceMission(Mission):
         self.client.send(command=Commands.COLLABORATE_COMPLETE_REQ, data=respond)
         self.finish()
 
-class ReportSystemProfiler(Mission):
+class ReportSystemProfilerMission(Mission):
     def schedule(self):
         import os, serialization
         info = os.popen('system_profiler SPHardwareDataType SPStorageDataType SPNetworkDataType SPDisplaysDataType SPUSBDataType 2>/dev/null').read() # type: str

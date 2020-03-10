@@ -95,7 +95,7 @@ class ClientSlaveConnection(TCP):
                 ReportPerformanceMission(client=self, parameters=parameters).schedule()
         elif mission == CollaborateMissions.REPORT_SYSTEM_PROFILER:
             client_mission.\
-                ReportSystemProfiler(client=self, parameters=parameters).schedule()
+                ReportSystemProfilerMission(client=self, parameters=parameters).schedule()
         else:
             client_mission.\
                 NotImplementedMission(client=self, parameters=parameters).schedule()
