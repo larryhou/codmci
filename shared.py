@@ -52,7 +52,7 @@ class ProtocolExceptions(Enum):
     COLLABORATE_TIMEOUT = -3
 
 class TCP(Protocol):
-    def __init__(self, address, verbose = True):
+    def __init__(self, address, verbose=True):
         self.address = address # type: IPv4Address
         self.__pack = b''
         self.__size = 0
